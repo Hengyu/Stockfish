@@ -82,9 +82,9 @@ namespace Eval {
         eval_file = EvalFileDefaultName;
 
     #if defined(DEFAULT_NNUE_DIRECTORY)
-    vector<string> dirs = { "<internal>" , "" , CommandLine::binaryDirectory , stringify(DEFAULT_NNUE_DIRECTORY) };
+    vector<string> dirs = { "<internal>" , "" , CommandLine::binaryDirectory , CommandLine::macOSResourcesDirectory, stringify(DEFAULT_NNUE_DIRECTORY) };
     #else
-    vector<string> dirs = { "<internal>" , "" , CommandLine::binaryDirectory };
+    vector<string> dirs = { "<internal>" , "" , CommandLine::binaryDirectory, CommandLine::macOSResourcesDirectory };
     #endif
 
     for (const string& directory : dirs)
@@ -1165,6 +1165,17 @@ std::string Eval::trace(Position& pos) {
   ss << "\n";
 
   return ss.str();
+}
+
+std::array<std::array<Score, 2>, 16> Eval::get_scores(Position& pos) {
+  Eval::trace(pos);
+  std::array<std::array<Score, COLOR_NB>, TERM_NB> array;
+  for (size_t i = 0; i < TERM_NB; i++)
+  {
+    Score* t_score = scores[i];
+    array[i] = {t_score[0], t_score[1]};
+  }
+  return array;
 }
 
 } // namespace Stockfish
