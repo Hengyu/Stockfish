@@ -48,6 +48,10 @@ namespace Eval {
 
   } // namespace NNUE
 
+  // PUSH iOS
+  std::array<std::array<Score, 2>, 16> get_scores(Position& pos);
+  // POP iOS
+
 } // namespace Eval
 
 } // namespace Stockfish
