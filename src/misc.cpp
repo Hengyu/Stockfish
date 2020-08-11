@@ -721,6 +721,27 @@ void bindThisThread(size_t idx) {
     #define GETCWD getcwd
 #endif
 
+// PUSH iOS
+std::string
+replace_last_component(std::string subject, const std::string& search, const std::string& replace) {
+    size_t pos = 0;
+    while ((pos = subject.find(search, pos)) != std::string::npos)
+    {
+        if (pos + search.length() == subject.length()
+            || (pos + search.length() == subject.length() - 1 && subject.back() == (char) ('/')))
+        {
+            subject.replace(pos, search.length(), replace);
+            break;
+        }
+        else
+        {
+            pos += search.length();
+        }
+    }
+    return subject;
+}
+// POP iOS
+
 CommandLine::CommandLine(int _argc, char** _argv) :
     argc(_argc),
     argv(_argv) {
@@ -760,6 +781,10 @@ CommandLine::CommandLine(int _argc, char** _argv) :
     // Pattern replacement: "./" at the start of path is replaced by the working directory
     if (binaryDirectory.find("." + pathSeparator) == 0)
         binaryDirectory.replace(0, 1, workingDirectory);
+
+    // PUSH iOS
+    macOSResourcesDirectory = replace_last_component(binaryDirectory, "MacOS", "Resources");
+    // POP iOS
 }
 
 }  // namespace Stockfish

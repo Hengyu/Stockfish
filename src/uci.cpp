@@ -30,6 +30,9 @@
 #include <vector>
 #include <cstdint>
 
+// PUSH iOS
+#include "iosconnector.h"
+// POP iOS
 #include "benchmark.h"
 #include "evaluate.h"
 #include "movegen.h"
@@ -81,10 +84,12 @@ UCI::UCI(int argc, char** argv) :
     options["Syzygy50MoveRule"] << Option(true);
     options["SyzygyProbeLimit"] << Option(7, 0, 7);
     options["EvalFile"] << Option(EvalFileDefaultNameBig, [this](const Option&) {
-        evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
+        evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, cli.macOSResourcesDirectory,
+                                              options, evalFiles);
     });
     options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option&) {
-        evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
+        evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, cli.macOSResourcesDirectory,
+                                              options, evalFiles);
     });
 
     threads.set({options, threads, tt});
@@ -415,5 +420,90 @@ Move UCI::to_move(const Position& pos, std::string& str) {
 
     return Move::none();
 }
+
+// PUSH iOS
+void UCI::execute_command(const char* cmd) {
+    Position     pos;
+    StateListPtr states(new std::deque<StateInfo>(1));
+    pos.set(StartFEN, false, &states->back());
+
+    std::string        token;
+    std::istringstream is(cmd);
+    is >> std::skipws >> token;
+
+    if (token == "quit" || token == "stop")
+        threads.stop = true;
+
+    else if (token == "debugmode")
+    {
+        std::string value;
+        is >> value;
+
+        if (value == "false")
+        {
+            // https://stackoverflow.com/questions/30184998/how-to-disable-cout-output-in-the-runtime
+            std::cout.setstate(std::ios_base::failbit);
+        }
+        else if (value == "true")
+        {
+            // http://www.cplusplus.com/reference/ios/ios/clear/
+            // http://www.cplusplus.com/reference/ios/basic_ios/good/
+            std::cout.clear(std::ios_base::goodbit);
+        }
+    }
+
+    // The GUI sends 'ponderhit' to tell us the user has played the expected move.
+    // So 'ponderhit' will be sent if we were told to ponder on the same move the
+    // user has played. We should continue searching but switch from pondering to
+    // normal search.
+    else if (token == "ponderhit")
+        threads.main_manager()->ponder = false;  // Switch to normal search
+
+    else if (token == "uci")
+        sync_cout << "id name " << engine_info(true) << "\n" << options << "\nuciok" << sync_endl;
+
+    else if (token == "setoption")
+        setoption(is);
+    else if (token == "go")
+        go(pos, is, states);
+    else if (token == "position")
+    {
+        position(pos, is, states);
+        if (pos.is_draw(0))
+        {
+            position_is_draw();
+        }
+    }
+    else if (token == "ucinewgame")
+        search_clear();
+    else if (token == "isready")
+        sync_cout << "readyok" << sync_endl;
+
+    // Add custom non-UCI commands, mainly for debugging purposes.
+    // These commands must not be used during a search!
+    else if (token == "flip")
+        pos.flip();
+    else if (token == "bench")
+        bench(pos, is, states);
+    else if (token == "d")
+        sync_cout << pos << sync_endl;
+    else if (token == "eval")
+        trace_eval(pos);
+    else if (token == "compiler")
+        sync_cout << compiler_info() << sync_endl;
+    else if (token == "--help" || token == "help" || token == "--license" || token == "license")
+        sync_cout
+          << "\nStockfish is a powerful chess engine for playing and analyzing."
+             "\nIt is released as free software licensed under the GNU GPLv3 License."
+             "\nStockfish is normally used with a graphical user interface (GUI) and implements"
+             "\nthe Universal Chess Interface (UCI) protocol to communicate with a GUI, an API, etc."
+             "\nFor any further information, visit https://github.com/official-stockfish/Stockfish#readme"
+             "\nor read the corresponding README.md and Copying.txt files distributed along with this program.\n"
+          << sync_endl;
+    else if (!token.empty() && token[0] != '#')
+        sync_cout << "Unknown command: '" << cmd << "'. Type help for more information."
+                  << sync_endl;
+}
+// POP iOS
 
 }  // namespace Stockfish

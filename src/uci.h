@@ -45,6 +45,7 @@ class UCI {
     UCI(int argc, char** argv);
 
     void loop();
+    void loop2();
 
     static int         to_cp(Value v);
     static std::string value(Value v);
@@ -52,6 +53,10 @@ class UCI {
     static std::string move(Move m, bool chess960);
     static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
+    // PUSH iOS
+    void               execute_command(const char* str);
+    const std::string& macOSResourceDirectory() const { return cli.macOSResourcesDirectory; }
+    // POP iOS
 
     const std::string& workingDirectory() const { return cli.workingDirectory; }
 

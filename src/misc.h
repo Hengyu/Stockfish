@@ -186,8 +186,9 @@ struct CommandLine {
     int    argc;
     char** argv;
 
-    std::string binaryDirectory;   // path of the executable directory
-    std::string workingDirectory;  // path of the working directory
+    std::string binaryDirectory;          // path of the executable directory
+    std::string workingDirectory;         // path of the working directory
+    std::string macOSResourcesDirectory;  // path of the resources directory (Apple Platform)
 };
 
 namespace Utility {

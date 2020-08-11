@@ -40,7 +40,8 @@ int main(int argc, char* argv[]) {
 
     Tune::init(uci.options);
 
-    uci.evalFiles = Eval::NNUE::load_networks(uci.workingDirectory(), uci.options, uci.evalFiles);
+    uci.evalFiles = Eval::NNUE::load_networks(uci.workingDirectory(), uci.macOSResourceDirectory(),
+                                              uci.options, uci.evalFiles);
 
     uci.loop();
 

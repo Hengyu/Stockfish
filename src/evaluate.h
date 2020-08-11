@@ -59,7 +59,7 @@ enum NetSize : int;
 
 using EvalFiles = std::unordered_map<Eval::NNUE::NetSize, EvalFile>;
 
-EvalFiles load_networks(const std::string&, const OptionsMap&, EvalFiles);
+EvalFiles load_networks(const std::string&, const std::string&, const OptionsMap&, EvalFiles);
 void      verify(const OptionsMap&, const EvalFiles&);
 
 }  // namespace NNUE

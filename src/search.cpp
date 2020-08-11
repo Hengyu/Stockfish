@@ -43,6 +43,9 @@
 #include "tt.h"
 #include "uci.h"
 #include "ucioption.h"
+// PUSH iOS
+#include "iosconnector.h"
+// POP iOS
 
 namespace Stockfish {
 
@@ -199,9 +202,19 @@ void Search::Worker::start_searching() {
 
     sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
+    // PUSH iOS
     if (bestThread->rootMoves[0].pv.size() > 1
         || bestThread->rootMoves[0].extract_ponder_from_tt(tt, rootPos))
+    {
         std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+        best_move(bestThread->rootMoves[0].pv[0], bestThread->rootMoves[0].pv[1],
+                  bestThread->rootMoves[0].score);
+    }
+    else
+    {
+        best_move(bestThread->rootMoves[0].pv[0], Move::none(), bestThread->rootMoves[0].score);
+    }
+    // POP iOS
 
     std::cout << sync_endl;
 }
@@ -928,9 +941,14 @@ moves_loop:  // When in check, search starts here
 
         if (rootNode && is_mainthread()
             && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
+        {
             sync_cout << "info depth " << depth << " currmove "
                       << UCI::move(move, pos.is_chess960()) << " currmovenumber "
                       << moveCount + thisThread->pvIdx << sync_endl;
+            // PUSH iOS
+            searched_move(move, moveCount + thisThread->pvIdx, moveCount);
+            // POP iOS
+        }
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
@@ -1910,6 +1928,10 @@ std::string SearchManager::pv(const Search::Worker&     worker,
 
         for (Move m : rootMoves[i].pv)
             ss << " " << UCI::move(m, pos.is_chess960());
+
+        // PUSH iOS
+        principal_variation(rootMoves[i].pv, v, depth, nodes, time);
+        // POP iOS
     }
 
     return ss.str();
