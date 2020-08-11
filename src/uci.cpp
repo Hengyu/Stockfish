@@ -22,6 +22,9 @@
 #include <sstream>
 #include <string>
 
+// PUSH iOS
+#include "iosconnector.h"
+// POP iOS
 #include "evaluate.h"
 #include "movegen.h"
 #include "position.h"
@@ -371,5 +374,73 @@ Move UCI::to_move(const Position& pos, string& str) {
 
   return MOVE_NONE;
 }
+
+// PUSH iOS
+void UCI::execute_command(const char *cmd) {
+    static Position pos;
+    static StateListPtr states(new std::deque<StateInfo>(1));
+    static bool shouldInitialize = true;
+    if (shouldInitialize)
+    {
+        //auto uiThread = std::make_shared<Thread>(0);
+        pos.set(StartFEN, Options["UCI_Chess960"], &states->back(), Threads.main());
+        shouldInitialize = false;
+    }
+    
+    string token;
+    istringstream is(cmd);
+    is >> skipws >> token;
+    
+    if (    token == "quit"
+        ||  token == "stop")
+        Threads.stop = true;
+    
+    else if (token == "debugmode") {
+        string value;
+        is >> value;
+        
+        if (value == "false") {
+            // https://stackoverflow.com/questions/30184998/how-to-disable-cout-output-in-the-runtime
+            std::cout.setstate(std::ios_base::failbit);
+        } else if (value == "true") {
+            // http://www.cplusplus.com/reference/ios/ios/clear/
+            // http://www.cplusplus.com/reference/ios/basic_ios/good/
+            std::cout.clear(std::ios_base::goodbit);
+        }
+    }
+    
+    // The GUI sends 'ponderhit' to tell us the user has played the expected move.
+    // So 'ponderhit' will be sent if we were told to ponder on the same move the
+    // user has played. We should continue searching but switch from pondering to
+    // normal search.
+    else if (token == "ponderhit")
+        Threads.main()->ponder = false; // Switch to normal search
+    
+    else if (token == "uci")
+        sync_cout << "id name " << engine_info(true)
+        << "\n"       << Options
+        << "\nuciok"  << sync_endl;
+    
+    else if (token == "setoption")  setoption(is);
+    else if (token == "go")         go(pos, is, states);
+    else if (token == "position") {
+        position(pos, is, states);
+        if (pos.is_draw(0)) {
+            position_is_draw();
+        }
+    }
+    else if (token == "ucinewgame") Search::clear();
+    else if (token == "isready")    sync_cout << "readyok" << sync_endl;
+    
+    // Additional custom non-UCI commands, mainly for debugging
+    else if (token == "flip")     pos.flip();
+    else if (token == "bench")    bench(pos, is, states);
+    else if (token == "d")        sync_cout << pos << sync_endl;
+    else if (token == "eval")     trace_eval(pos);
+    else if (token == "compiler") sync_cout << compiler_info() << sync_endl;
+    else if (!token.empty() && token[0] != '#')
+        sync_cout << "Unknown command: " << cmd << sync_endl;
+}
+// POP iOS
 
 } // namespace Stockfish
