@@ -34,6 +34,9 @@
 #include "tt.h"
 #include "uci.h"
 #include "syzygy/tbprobe.h"
+// PUSH iOS
+#include "iosconnector.h"
+// POP iOS
 
 namespace Stockfish {
 
@@ -248,8 +251,14 @@ void MainThread::search() {
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
-  if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
+  // PUSH iOS
+  if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos)) {
       std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+      best_move(bestThread->rootMoves[0].pv[0], bestThread->rootMoves[0].pv[1], bestThread->rootMoves[0].score, bestThread->trend);
+  } else {
+      best_move(bestThread->rootMoves[0].pv[0], MOVE_NONE, bestThread->rootMoves[0].score, bestThread->trend);
+  }
+  // POP iOS
 
   std::cout << sync_endl;
 }
@@ -969,10 +978,15 @@ moves_loop: // When in check, search starts here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000) {
           sync_cout << "info depth " << depth
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
+          // PUSH iOS
+          searched_move(move, moveCount + thisThread->pvIdx, moveCount);
+          // POP iOS
+      }
+          
       if (PvNode)
           (ss+1)->pv = nullptr;
 
@@ -1871,6 +1885,10 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
 
       for (Move m : rootMoves[i].pv)
           ss << " " << UCI::move(m, pos.is_chess960());
+      
+      // PUSH iOS
+      principal_variation(rootMoves[i].pv, v, depth, nodesSearched, elapsed);
+      // POP iOS
   }
 
   return ss.str();
