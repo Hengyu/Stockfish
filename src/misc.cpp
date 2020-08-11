@@ -578,11 +578,27 @@ void bindThisThread(size_t idx) {
 #define GETCWD getcwd
 #endif
 
+std::string replace_last_component(std::string subject, const std::string& search, const std::string& replace) {
+    size_t pos = 0;
+    while ((pos = subject.find(search, pos)) != std::string::npos) {
+        if (   pos + search.length() == subject.length()
+            || (pos + search.length() == subject.length() - 1 && subject.back() == (char)('/')))
+        {
+            subject.replace(pos, search.length(), replace);
+            break;
+        } else {
+            pos += search.length();
+        }
+    }
+    return subject;
+}
+
 namespace CommandLine {
 
 string argv0;            // path+name of the executable binary, as given by argv[0]
 string binaryDirectory;  // path of the executable directory
 string workingDirectory; // path of the working directory
+string macOSResourcesDirectory;// path of the macOS resources directory
 string pathSeparator;    // Separator for our current OS
 
 void init(int argc, char* argv[]) {
@@ -623,7 +639,8 @@ void init(int argc, char* argv[]) {
     // pattern replacement: "./" at the start of path is replaced by the working directory
     if (binaryDirectory.find("." + pathSeparator) == 0)
         binaryDirectory.replace(0, 1, workingDirectory);
-}
 
+    macOSResourcesDirectory = replace_last_component(binaryDirectory, "MacOS", "Resources");
+}
 
 } // namespace CommandLine

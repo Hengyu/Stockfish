@@ -129,6 +129,7 @@ namespace CommandLine {
 
   extern std::string binaryDirectory;  // path of the executable directory
   extern std::string workingDirectory; // path of the working directory
+  extern std::string macOSResourcesDirectory; // path of the resources directory
 }
 
 #endif // #ifndef MISC_H_INCLUDED
