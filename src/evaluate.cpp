@@ -1167,4 +1167,15 @@ std::string Eval::trace(Position& pos) {
   return ss.str();
 }
 
+std::array<std::array<Score, 2>, 16> Eval::get_scores(Position& pos) {
+  Eval::trace(pos);
+  std::array<std::array<Score, COLOR_NB>, TERM_NB> array;
+  for (size_t i = 0; i < TERM_NB; i++)
+  {
+    Score* t_score = scores[i];
+    array[i] = {t_score[0], t_score[1]};
+  }
+  return array;
+}
+
 } // namespace Stockfish

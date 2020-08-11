@@ -83,6 +83,9 @@ std::string pv(const Position& pos, Depth depth);
 std::string wdl(Value v, int ply);
 Move to_move(const Position& pos, std::string& str);
 
+// PUSH iOS
+void execute_command(const char *str);
+// POP iOS
 } // namespace UCI
 
 extern UCI::OptionsMap Options;
