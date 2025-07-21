@@ -92,6 +92,7 @@ class Engine {
     // utility functions
 
     void trace_eval() const;
+    bool position_is_draw() const { return pos.is_draw(static_cast<int>(states->size())); }
 
     const OptionsMap& get_options() const;
     OptionsMap&       get_options();

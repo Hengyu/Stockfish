@@ -148,11 +148,13 @@ Network<Arch, Transformer>::operator=(const Network<Arch, Transformer>& other) {
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::load(const std::string& rootDirectory, std::string evalfilePath) {
+    std::string macOSResourcesDirectory =
+      CommandLine::replace_last_component(rootDirectory, "MacOS", "Resources");
 #if defined(DEFAULT_NNUE_DIRECTORY)
-    std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
+    std::vector<std::string> dirs = {"<internal>", "", rootDirectory, macOSResourcesDirectory,
                                      stringify(DEFAULT_NNUE_DIRECTORY)};
 #else
-    std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
+    std::vector<std::string> dirs = {"<internal>", "", rootDirectory, macOSResourcesDirectory};
 #endif
 
     if (evalfilePath.empty())

@@ -300,6 +300,24 @@ struct CommandLine {
     static std::string get_binary_directory(std::string argv0);
     static std::string get_working_directory();
 
+    static std::string replace_last_component(std::string subject, const std::string& search, const std::string& replace) {
+        size_t pos = 0;
+        while ((pos = subject.find(search, pos)) != std::string::npos)
+        {
+            if (pos + search.length() == subject.length()
+                || (pos + search.length() == subject.length() - 1 && subject.back() == (char) ('/')))
+            {
+                subject.replace(pos, search.length(), replace);
+                break;
+            }
+            else
+            {
+                pos += search.length();
+            }
+        }
+        return subject;
+    }
+
     int    argc;
     char** argv;
 };
