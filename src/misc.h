@@ -476,6 +476,24 @@ struct CommandLine {
     char** argv;
 };
 
+inline std::string replace_last_path_component(std::string subject, const std::string& search, const std::string& replace) {
+    size_t pos = 0;
+    while ((pos = subject.find(search, pos)) != std::string::npos)
+    {
+        if (pos + search.length() == subject.length()
+            || (pos + search.length() == subject.length() - 1 && subject.back() == '/'))
+        {
+            subject.replace(pos, search.length(), replace);
+            break;
+        }
+        else
+        {
+            pos += search.length();
+        }
+    }
+    return subject;
+}
+
 namespace Utility {
 
 template<typename T, typename Predicate>

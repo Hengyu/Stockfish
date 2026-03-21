@@ -109,11 +109,22 @@ bool write_parameters(std::ostream& stream, const T& reference) {
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::load(const std::string& rootDirectory, std::string evalfilePath) {
+#ifdef __APPLE__
+    std::string macOSResourcesDirectory =
+      replace_last_path_component(rootDirectory, "MacOS", "Resources");
+#endif
 #if defined(DEFAULT_NNUE_DIRECTORY)
     std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
+#ifdef __APPLE__
+                                     macOSResourcesDirectory,
+#endif
                                      stringify(DEFAULT_NNUE_DIRECTORY)};
 #else
-    std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
+    std::vector<std::string> dirs = {"<internal>", "", rootDirectory
+#ifdef __APPLE__
+                                     , macOSResourcesDirectory
+#endif
+    };
 #endif
 
     if (evalfilePath.empty())
