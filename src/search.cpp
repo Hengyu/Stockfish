@@ -50,6 +50,8 @@
 #include "uci.h"
 #include "ucioption.h"
 
+#include "swift/iosconnector.h"
+
 namespace Stockfish {
 
 static constexpr std::array<int, 16> lmrDivisor = {3307, 2930, 2874, 2818, 3215, 3225, 3224, 2782,
@@ -251,11 +253,17 @@ void Search::Worker::start_searching() {
 
     // In rare cases, pv() may change the ponder move through syzygy_extend_pv().
     std::string ponder;
+    Move ponderMove = Move::none();
     if (bestThread->rootMoves[0].pv.size() > 1)
-        ponder = UCIEngine::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+    {
+        ponderMove = bestThread->rootMoves[0].pv[1];
+        ponder     = UCIEngine::move(ponderMove, rootPos.is_chess960());
+    }
 
     auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
     main_manager()->updates.onBestmove(bestmove, ponder);
+
+    best_move(bestThread->rootMoves[0].pv[0], ponderMove);
 }
 
 // Main iterative deepening loop. It calls search()
@@ -1062,6 +1070,7 @@ moves_loop:  // When in check, search starts here
         {
             main_manager()->updates.onIter(
               {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + pvIdx});
+            searched_move(move, moveCount + pvIdx, moveCount);
         }
         if (PvNode)
             (ss + 1)->pv = nullptr;
@@ -2201,6 +2210,40 @@ void SearchManager::pv(Search::Worker&           worker,
         info.hashfull  = tt.hashfull();
 
         updates.onUpdateFull(info);
+
+        // PUSH iOS
+        PrincipalVariationInfo info2        = {};
+        ScoreBridge            bridgedScore = {};
+        Score                  score        = info.score;
+        if (score.is<Score::Mate>())
+        {
+            auto m                  = score.get<Score::Mate>();
+            bridgedScore.kind       = ScoreKindMate;
+            bridgedScore.mate.plies = m.plies;
+        }
+        else if (score.is<Score::Tablebase>())
+        {
+            auto tb                      = score.get<Score::Tablebase>();
+            bridgedScore.kind            = ScoreKindTablebase;
+            bridgedScore.tablebase.plies = tb.plies;
+            bridgedScore.tablebase.win   = tb.win;
+        }
+        else
+        {
+            auto u                   = score.get<Score::InternalUnits>();
+            bridgedScore.kind        = ScoreKindUnits;
+            bridgedScore.units.value = u.value;
+        }
+
+        info2.moves.assign(rootMoves[i].pv.begin(), rootMoves[i].pv.end());
+        info2.score          = bridgedScore;
+        info2.depth          = info.depth;
+        info2.selectiveDepth = info.selDepth;
+        info2.winDrawlose    = info.wdl;
+        info2.nodes          = info.nodes;
+        info2.time           = info.timeMs;
+        principal_variation(&info2);
+        // POP iOS
     }
 }
 
