@@ -342,6 +342,22 @@ void Engine::trace_eval() const {
     sync_cout << "\n" << Eval::trace(p, *networks) << sync_endl;
 }
 
+Value Engine::get_eval_value(const std::string& fen) const {
+    StateListPtr eval_states(new std::deque<StateInfo>(1));
+    Position     p;
+    p.set(fen, options["UCI_Chess960"], &eval_states->back());
+
+    if (p.checkers())
+        return VALUE_NONE;
+
+    verify_networks();
+
+    auto accumulators = std::make_unique<Eval::NNUE::AccumulatorStack>();
+    auto caches       = std::make_unique<Eval::NNUE::AccumulatorCaches>(*networks);
+
+    return Eval::evaluate(*networks, p, *accumulators, *caches, VALUE_ZERO);
+}
+
 const OptionsMap& Engine::get_options() const { return options; }
 OptionsMap&       Engine::get_options() { return options; }
 

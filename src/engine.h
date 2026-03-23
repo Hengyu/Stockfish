@@ -96,6 +96,7 @@ class Engine {
     // utility functions
 
     void trace_eval() const;
+    Value get_eval_value(const std::string& fen) const;
     bool position_is_draw() const { return pos.is_draw(static_cast<int>(states->size())); }
 
     const OptionsMap& get_options() const;
