@@ -755,5 +755,20 @@ void UCIEngine::execute_command(std::string cmd) {
                   << sync_endl;
 }
 
+UCIEngine::WDLResult UCIEngine::compute_wdl(const std::string& fen) {
+    Value v = engine.get_eval_value(fen);
+    if (v == VALUE_NONE)
+        return {0, 0, 0, false};
+
+    StateListPtr states(new std::deque<StateInfo>(1));
+    Position     pos;
+    pos.set(fen, engine.get_options()["UCI_Chess960"], &states->back());
+
+    int wdl_w = win_rate_model(v, pos);
+    int wdl_l = win_rate_model(-v, pos);
+    int wdl_d = 1000 - wdl_w - wdl_l;
+    return {wdl_w, wdl_d, wdl_l, true};
+}
+
 // POP iOS
 }  // namespace Stockfish

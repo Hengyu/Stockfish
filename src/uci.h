@@ -57,6 +57,15 @@ class UCIEngine {
 
     auto& engine_options() { return engine.get_options(); }
 
+    struct WDLResult {
+        int  win;
+        int  draw;
+        int  lose;
+        bool valid;
+    };
+
+    WDLResult compute_wdl(const std::string& fen);
+
    private:
     Engine      engine;
     CommandLine cli;
