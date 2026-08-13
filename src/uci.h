@@ -42,6 +42,7 @@ class UCIEngine {
     UCIEngine(CommandLine cli);
 
     void loop();
+    void execute_command(std::string cmd);
 
     static int         to_cp(Value v, const Position& pos);
     static std::string format_score(const Score& s);
@@ -54,6 +55,15 @@ class UCIEngine {
     Search::LimitsType parse_limits(std::istream& is);
 
     auto& engine_options() { return engine.get_options(); }
+
+    struct WDLResult {
+        int  win;
+        int  draw;
+        int  lose;
+        bool valid;
+    };
+
+    WDLResult compute_wdl(const std::string& fen);
 
    private:
     Engine      engine;

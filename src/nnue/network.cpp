@@ -88,11 +88,12 @@ bool write_parameters(std::ostream& stream, const T& reference) {
 }  // namespace Detail
 
 void Network::load(const fs::path& rootDirectory, fs::path evalfilePath, EvalFile& evalFile) {
-#if defined(DEFAULT_NNUE_DIRECTORY)
-    std::vector<fs::path> dirs = {fs::path{}, rootDirectory,
-                                  fs::path(stringify(DEFAULT_NNUE_DIRECTORY))};
-#else
     std::vector<fs::path> dirs = {fs::path{}, rootDirectory};
+#ifdef __APPLE__
+    dirs.push_back(replace_last_path_component(rootDirectory.string(), "MacOS", "Resources"));
+#endif
+#if defined(DEFAULT_NNUE_DIRECTORY)
+    dirs.push_back(fs::path(stringify(DEFAULT_NNUE_DIRECTORY)));
 #endif
 
     if (evalfilePath.empty())

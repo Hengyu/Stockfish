@@ -534,6 +534,17 @@ struct CommandLine {
 #endif
 };
 
+inline std::string replace_last_path_component(std::string subject, const std::string& search, const std::string& replace) {
+    // The last path component is the rightmost occurrence of `search`, i.e. one that
+    // ends the string (optionally followed by a single trailing '/').
+    size_t pos = subject.rfind(search);
+    if (pos != std::string::npos
+        && (pos + search.length() == subject.length()
+            || (subject.back() == '/' && pos + search.length() == subject.length() - 1)))
+        subject.replace(pos, search.length(), replace);
+    return subject;
+}
+
 namespace Utility {
 
 template<typename T, typename Predicate>

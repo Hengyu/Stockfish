@@ -31,6 +31,7 @@
 #include <list>
 #include <ratio>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "bitboard.h"
@@ -49,6 +50,8 @@
 #include "types.h"
 #include "uci.h"
 #include "ucioption.h"
+
+#include "swift/iosconnector.h"
 
 namespace Stockfish {
 
@@ -257,11 +260,17 @@ void Search::Worker::start_searching() {
 
     // In rare cases, output_pv() may change the ponder move through syzygy_extend_pv().
     std::string ponder;
+    Move ponderMove = Move::none();
     if (bestThread->rootMoves[0].pv.size() > 1)
-        ponder = UCIEngine::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+    {
+        ponderMove = bestThread->rootMoves[0].pv[1];
+        ponder     = UCIEngine::move(ponderMove, rootPos.is_chess960());
+    }
 
     auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
     main_manager()->updates.onBestmove(bestmove, ponder);
+
+    best_move(bestThread->rootMoves[0].pv[0], ponderMove);
 }
 
 // Main iterative deepening loop. It calls search()
@@ -1128,6 +1137,7 @@ moves_loop:  // When in check, search starts here
         {
             main_manager()->updates.onIter(
               {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + pvIdx});
+            searched_move(move, moveCount + pvIdx, moveCount);
         }
         if (PvNode)
             (ss + 1)->pv = nullptr;
@@ -2229,6 +2239,34 @@ void syzygy_extend_pv(const OptionsMap&         options,
           << sync_endl;
 }
 
+// Converts a Score into the C-facing ScoreBridge used by the iOS wrapper. Using visit()
+// forces every Score alternative to be handled here, so adding a new one is a compile
+// error rather than a silent fallthrough.
+static ScoreBridge to_score_bridge(const Score& score) {
+    ScoreBridge bridged = {};
+    score.visit([&](const auto& s) {
+        using T = std::decay_t<decltype(s)>;
+        if constexpr (std::is_same_v<T, Score::Mate>)
+        {
+            bridged.kind       = ScoreKindMate;
+            bridged.mate.plies = s.plies;
+        }
+        else if constexpr (std::is_same_v<T, Score::Tablebase>)
+        {
+            bridged.kind            = ScoreKindTablebase;
+            bridged.tablebase.plies = s.plies;
+            bridged.tablebase.win   = s.win;
+        }
+        else
+        {
+            static_assert(std::is_same_v<T, Score::InternalUnits>, "unhandled Score alternative");
+            bridged.kind        = ScoreKindUnits;
+            bridged.units.value = s.value;
+        }
+    });
+    return bridged;
+}
+
 void SearchManager::output_pv(Search::Worker&           worker,
                               const ThreadPool&         threads,
                               const TranspositionTable& tt,
@@ -2296,6 +2334,18 @@ void SearchManager::output_pv(Search::Worker&           worker,
         info.hashfull  = tt.hashfull();
 
         updates.onUpdateFull(info);
+
+        // PUSH iOS
+        PrincipalVariationInfo info2 = {};
+        info2.moves.assign(rootMoves[i].pv.begin(), rootMoves[i].pv.end());
+        info2.score          = to_score_bridge(info.score);
+        info2.depth          = info.depth;
+        info2.selectiveDepth = info.selDepth;
+        info2.winDrawlose    = info.wdl;
+        info2.nodes          = info.nodes;
+        info2.time           = info.timeMs;
+        principal_variation(&info2);
+        // POP iOS
     }
 }
 
